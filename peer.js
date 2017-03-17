@@ -1,5 +1,4 @@
 var util = require('util');
-var webrtcSupport = require('webrtcsupport');
 var PeerConnection = require('rtcpeerconnection');
 var WildEmitter = require('wildemitter');
 var FileTransfer = require('filetransfer');
@@ -157,8 +156,7 @@ Peer.prototype.send = function (messageType, payload) {
         broadcaster: this.broadcaster,
         roomType: this.type,
         type: messageType,
-        payload: payload,
-        prefix: webrtcSupport.prefix
+        payload: payload
     };
     this.logger.log('sending', messageType, message);
     this.parent.emit('message', message);
@@ -191,7 +189,9 @@ Peer.prototype._observeDataChannel = function (channel) {
 
 // Fetch or create a data channel by the given name
 Peer.prototype.getDataChannel = function (name, opts) {
-    if (!webrtcSupport.supportDataChannel) return this.emit('error', new Error('createDataChannel not supported'));
+    if (!('createDataChannel' in RTCPeerConnection.prototype)) {
+        return this.emit('error', new Error('createDataChannel not supported'));
+    }
     var channel = this.channels[name];
     opts || (opts = {});
     if (channel) return channel;
@@ -204,16 +204,9 @@ Peer.prototype.getDataChannel = function (name, opts) {
 Peer.prototype.onIceCandidate = function (candidate) {
     if (this.closed) return;
     if (candidate) {
-        var pcConfig = this.parent.config.peerConnectionConfig;
-        if (webrtcSupport.prefix === 'moz' && pcConfig && pcConfig.iceTransports &&
-                candidate.candidate && candidate.candidate.candidate &&
-                candidate.candidate.candidate.indexOf(pcConfig.iceTransports) < 0) {
-            this.logger.log('Ignoring ice candidate not matching pcConfig iceTransports type: ', pcConfig.iceTransports);
-        } else {
-            this.send('candidate', candidate);
-        }
+        this.send('candidate', candidate);
     } else {
-        this.logger.log("End of candidates.");
+        this.logger.log('End of candidates.');
     }
 };
 
