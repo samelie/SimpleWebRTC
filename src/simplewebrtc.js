@@ -66,12 +66,7 @@ function SimpleWebRTC(opts) {
     // call WildEmitter constructor
     WildEmitter.call(this);
 
-    // create default SocketIoConnection if it's not passed in
-    if (this.config.connection === null) {
-        connection = this.connection = new SocketIoConnection(this.config);
-    } else {
-        connection = this.connection = this.config.connection;
-    }
+    connection = this.connection = new SocketIoConnection(this.config);
 
     connection.on('connect', function () {
         self.emit('connectionReady', connection.getSessionid());
